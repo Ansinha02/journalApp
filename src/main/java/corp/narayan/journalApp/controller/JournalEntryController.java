@@ -2,6 +2,7 @@ package corp.narayan.journalApp.controller;
 
 import corp.narayan.journalApp.entity.JournalEntry;
 import corp.narayan.journalApp.service.JournalEntryService;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,27 +19,29 @@ import static org.springframework.util.StringUtils.hasText;
 
 @RestController
 @RequestMapping("/journal")
+@Slf4j
 public class JournalEntryController {
 
     @Autowired
     JournalEntryService journalEntryService;
 
-    @GetMapping
-    public ResponseEntity<List<JournalEntry>> getAll() {
-        List<JournalEntry> journalEntries = journalEntryService.getAll();
+    @GetMapping("{username}")
+    public ResponseEntity<List<JournalEntry>> getAllEntriesByUserName(@PathVariable String username) {
+        List<JournalEntry> journalEntries = journalEntryService.getAllEntriesByUserName(username);
         if(!isEmpty(journalEntries)) {
             return new ResponseEntity(journalEntries, HttpStatus.OK);
         }
         return new ResponseEntity(HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping
-    public ResponseEntity<JournalEntry> createEntry(@RequestBody JournalEntry journalEntry) {
+    @PostMapping("{username}")
+    public ResponseEntity<JournalEntry> createEntry(@RequestBody JournalEntry journalEntry,
+                                                    @PathVariable String username) {
         try {
-            journalEntry.setDate(LocalDateTime.now());
-            journalEntryService.saveEntry(journalEntry);
+            journalEntryService.saveEntry(journalEntry, username);
             return new ResponseEntity<>(journalEntry, HttpStatus.CREATED);
         } catch (Exception e) {
+            log.error(e.toString());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -52,10 +55,10 @@ public class JournalEntryController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @DeleteMapping("/id/{id}")
-    public ResponseEntity<?> removeJournalEntryById(@PathVariable ObjectId id) {
+    @DeleteMapping("/id/{username}/{id}")
+    public ResponseEntity<?> removeJournalEntryById(@PathVariable ObjectId id, @PathVariable String username) {
         try {
-            journalEntryService.deleteById(id);
+            journalEntryService.deleteById(id, username);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
